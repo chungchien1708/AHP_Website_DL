@@ -35,7 +35,7 @@ OPENROUTER_API_KEY = "sk-or-v1-f4144ed6727a0bccf07d1b67b3e3723c9a18bf8904d0e0ad9
 #         port='5432'
 #     )
 #     return conn
-  def get_db_connection():
+def get_db_connection():
     # Lấy DATABASE_URL từ biến môi trường (được thêm trong Render)
     database_url = os.environ.get('DATABASE_URL')
     
