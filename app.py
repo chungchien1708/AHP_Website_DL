@@ -15,6 +15,9 @@ import psycopg2
 from psycopg2 import sql
 import pdfkit
 import requests
+import os
+import psycopg2
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Thay bằng secret key thật của bạn
@@ -23,13 +26,31 @@ OPENROUTER_API_KEY = "sk-or-v1-f4144ed6727a0bccf07d1b67b3e3723c9a18bf8904d0e0ad9
 # -------------------------------
 # DATABASE: Kết nối đến PostgreSQL
 # -------------------------------
-def get_db_connection():
+# def get_db_connection():
+#     conn = psycopg2.connect(
+#         database='ahp_tourism_db',  # Đổi tên database
+#         user='postgres',
+#         password='oikuhj12345',
+#         host='localhost',
+#         port='5432'
+#     )
+#     return conn
+  def get_db_connection():
+    # Lấy DATABASE_URL từ biến môi trường (được thêm trong Render)
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if not database_url:
+        raise ValueError("DATABASE_URL is not set in environment variables.")
+
+    # Phân tích chuỗi URL: postgres://user:pass@host:port/dbname
+    result = urlparse(database_url)
+
     conn = psycopg2.connect(
-        database='ahp_tourism_db',  # Đổi tên database
-        user='postgres',
-        password='oikuhj12345',
-        host='localhost',
-        port='5432'
+        database=result.path[1:],       # Bỏ dấu "/" ở đầu
+        user=result.username,
+        password=result.password,
+        host=result.hostname,
+        port=result.port
     )
     return conn
 
