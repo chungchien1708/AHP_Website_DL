@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chỉnh Sửa Ma Trận Con & Tính Lại AHP – HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <script defer src="https://kit.fontawesome.com/yourkit.js"></script>
+  <style>
+    body { background-color: #DFD0B8; }
+    nav.navbar, footer { background-color: #19485F !important; }
+    nav .navbar-brand, footer { color: #fff !important; }
+    h1 { color: #19485F; font-weight: bold; }
+    .highlight { font-weight: bold; color: #19485F; }
+    .ahp-input {
+      width: 100%;
+      box-sizing: border-box;
+      text-align: center;
+      padding: 6px 10px;
+      font-size: 1rem;
+    }
+    .btn-custom { padding: 10px 20px; font-size: 1.1rem; }
+    .alert-warning { font-size: 1.1rem; }
+    .matrix-container {
+      background-color: #D4CCBC;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-bottom: 2rem;
+    }
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: transparent !important;
+    }
+    .matrix-table th,
+    .matrix-table td {
+      background-color: transparent !important;
+      border: 1px solid rgba(0,0,0,0.1);
+      padding: 0.75rem;
+      text-align: center;
+      vertical-align: middle;
+      min-width: 60px;
+    }
+    .matrix-table thead th {
+      background-color: rgba(255,255,255,0.4);
+    }
+    .weight-card {
+      border-left: 5px solid #19485F;
+      margin-bottom: 15px;
+      background-color: #D4CCBC;
+      border-radius: 0.25rem;
+      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    .weight-card .card-body {
+      padding: 10px 15px;
+      color: #19485F;
+      font-weight: 600;
+    }
+    .btn-primary,
+    .btn-primary:hover,
+    .btn-primary:focus {
+      background-color: #19485F;
+      border-color: #19485F;
+      color: #fff;
+    }
+    .btn-primary:hover,
+    .btn-primary:focus {
+      background-color: #0f3548;
+      border-color: #0f3548;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        <i class="fa-solid fa-map-location-dot"></i> HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH
+      </a>
+    </div>
+  </nav>
+
+  <div class="container my-5">
+    <h1 class="text-center mb-4">Chỉnh sửa Ma trận Con &amp; Tính lại AHP</h1>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert alert-warning">
+          {% for msg in messages %}
+            <p>{{ msg }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="matrix-container">
+      <form method="POST" action="{{ url_for('custom_matrix') }}">
+        {% set viet = {
+          'accessibility': 'Khả năng tiếp cận',
+          'attractions': 'Điểm tham quan',
+          'cost': 'Chi phí',
+          'amenities': 'Tiện ích',
+          'safety': 'An toàn'
+        } %}
+
+        {% for crit, info in matrices.items() %}
+          <h3 class="mb-3">{{ viet.get(crit, crit) }}</h3>
+
+          <div class="card weight-card">
+            <div class="card-body">
+              <strong>Trọng số con:</strong>
+              {% for w in info.weights %}
+                <span class="highlight">{{ w|round(3) }}</span>{% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+
+          <table class="matrix-table mb-5" id="matrix-{{ crit }}">
+            <thead>
+              <tr>
+                <th>Điểm</th>
+                {% for alt in alternatives %}
+                  <th>{{ alt }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in range(alternatives|length) %}
+                <tr>
+                  <th class="align-middle">{{ alternatives[i] }}</th>
+                  {% for j in range(alternatives|length) %}
+                    <td>
+                      {% if j > i %}
+                        <input
+                          type="text"
+                          name="matrix_{{ crit }}_{{ i }}_{{ j }}"
+                          value="{{ info.original[i][j]|round(4) }}"
+                          data-crit="{{ crit }}"
+                          data-i="{{ i }}"
+                          data-j="{{ j }}"
+                          class="form-control ahp-input"
+                          required
+                          placeholder="1 đến 9 hoặc 1/9"
+                          pattern="^([1-9](\.\d+)?|[1-9]\/[1-9])$"
+                          title="Chỉ nhập số từ 1 đến 9 hoặc phân số như 1/3"
+/>
+                      {% elif j == i %}
+                        <input type="text" readonly class="form-control" value="1" />
+                      {% else %}
+                        <input
+                          type="text"
+                          readonly
+                          class="form-control"
+                          data-crit="{{ crit }}"
+                          data-i="{{ i }}"
+                          data-j="{{ j }}"
+                        />
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endfor %}
+
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-primary btn-lg btn-custom">
+            <i class="fa-solid fa-calculator"></i> Tính lại AHP
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="bg-dark text-white text-center py-3">
+    <small>&copy; 2025 HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH</small>
+  </footer>
+
+  <script>
+    document.querySelectorAll(".ahp-input").forEach((inp) => {
+      inp.addEventListener("blur", (e) => {
+        const inputValue = e.target.value.trim();
+        if (!inputValue) return;
+
+        let val;
+        if (inputValue.includes("/")) {
+          const parts = inputValue.split("/");
+          if (
+            parts.length === 2 &&
+            !isNaN(parts[0]) &&
+            !isNaN(parts[1]) &&
+            parseFloat(parts[1]) !== 0
+          ) {
+            val = parseFloat(parts[0]) / parseFloat(parts[1]);
+          } else {
+            alert("Phân số không hợp lệ. Ví dụ: 1/3, 3/2");
+            e.target.value = "";
+            return;
+          }
+        } else {
+          val = parseFloat(inputValue);
+        }
+
+        if (isNaN(val) || val < 1 / 9 || val > 9) {
+          alert("Giá trị phải từ 1/9 đến 9. Bạn có thể nhập phân số như 1/3.");
+          e.target.value = "";
+          return;
+        }
+
+        const crit = e.target.dataset.crit;
+        const i = e.target.dataset.i;
+        const j = e.target.dataset.j;
+        const mirror = document.querySelector(
+          `#matrix-${crit} input[data-crit="${crit}"][data-i="${j}"][data-j="${i}"]`
+        );
+        if (mirror) mirror.value = (1 / val).toFixed(4);
+      });
+    });
+  </script>
+</body>
+</html>

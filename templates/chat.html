@@ -1,0 +1,112 @@
+<!-- templates/chat.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Trợ lý du lịch AI – Nhóm 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script defer src="https://kit.fontawesome.com/yourkit.js"></script> <!-- Thay 'yourkit.js' bằng mã FontAwesome của bạn -->
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #DFD0B8;
+    }
+    .btn-primary, .bg-primary {
+      background-color: #19485F !important;
+      border-color: #19485F !important;
+    }
+    .btn-outline-primary:hover {
+      background-color: #19485F;
+      color: #DFD0B8;
+    }
+    .navbar, footer {
+      background-color: #19485F !important;
+    }
+    .chat-box {
+      background: #ffffff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      max-width: 700px;
+      margin: auto;
+    }
+    textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      resize: vertical;
+      min-height: 100px;
+      margin-bottom: 15px;
+    }
+    .response-box {
+      background: #e0f2fe;
+      padding: 15px;
+      border-radius: 10px;
+      color: #0c4a6e;
+    }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        <i class="fa-solid fa-map-location-dot"></i> HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a href="{{ url_for('filter_destinations') }}" class="btn btn-outline-primary ms-2">
+              <i class="fa-solid fa-filter"></i> Lọc điểm du lịch
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container my-5 flex-fill">
+    <div class="chat-box">
+      <h1 class="text-center mb-4" style="color: #19485F;">
+        💬 Trò chuyện với Trợ lý AI
+      </h1>
+      <form method="POST">
+        <textarea name="user_input" placeholder="Hỏi về điểm du lịch, tiêu chí, v.v...">{{ request.form.get('user_input', '') }}</textarea>
+        <div class="text-end">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-paper-plane"></i> Gửi
+          </button>
+        </div>
+      </form>
+
+      {% if ai_response %}
+        <h5 class="mt-4" style="color: #19485F;">AI trả lời:</h5>
+        <div class="response-box">
+          {{ ai_response }}
+        </div>
+      {% endif %}
+
+      <!-- <div class="mt-4 text-start">
+        <a href="{{ url_for('index') }}" class="text-decoration-none">
+          ⬅ Quay lại trang chính
+        </a>
+      </div> -->
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-100 text-white text-center py-3 mt-auto">
+    <small>&copy; 2025 HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH</small>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

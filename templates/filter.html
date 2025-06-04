@@ -1,0 +1,190 @@
+<!-- templates/filter.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Lọc điểm du lịch – Nhóm 5</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script defer src="https://kit.fontawesome.com/yourkit.js"></script> <!-- Thay 'yourkit.js' bằng FontAwesome Kit thực -->
+  <style>
+    body {
+      background-color: #DFD0B8;
+    }
+    .form-check-label { margin-left: 10px; }
+    .form-check {
+      position: relative;
+      padding-left: 30px;
+      transition: transform 0.2s ease;
+    }
+    .form-check:hover { transform: scale(1.05); }
+    .form-check:hover .form-check-label { font-weight: bold; color: #19485F; }
+    .btn-primary, .bg-primary {
+      background-color: #19485F !important;
+      border-color: #19485F !important;
+    }
+    .btn-outline-primary:hover {
+      background-color: #19485F;
+      color: #DFD0B8;
+    }
+    .navbar, footer {
+      background-color: #19485F !important;
+    }
+  </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('index') }}">
+      <i class="fa-solid fa-map-location-dot"></i> HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a href="{{ url_for('chat') }}" class="btn btn-outline-primary me-2">
+            <i class="fa-solid fa-comments"></i> Chat với AI
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('history') }}" class="btn btn-outline-primary">
+            <i class="fa-solid fa-clock-rotate-left"></i> Lịch sử
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+  <!-- Main content -->
+  <main class="container my-5 flex-fill">
+    <h1 class="text-center mb-4" style="color: #19485F;">TÌM ĐIỂM DU LỊCH PHÙ HỢP</h1>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="alert alert-warning">
+          {% for msg in messages %}{{ msg }}<br>{% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('filter_destinations') }}">
+      <!-- Row Region + Type -->
+      <div class="row mb-5">
+        <!-- Vùng -->
+        <div class="col-lg-6 mb-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white text-center">
+              <h5 class="mb-0"><i class="fa-solid fa-globe"></i> Vùng</h5>
+            </div>
+            <div class="card-body" style="background-color: #D4CCBC;">
+              {% for r in regions %}
+                <div class="form-check mb-2" data-bs-toggle="tooltip" title="Chọn vùng {{ r }}">
+                  <input class="form-check-input region-checkbox" type="checkbox" name="region" value="{{ r }}" id="rg-{{ loop.index }}">
+                  <label class="form-check-label" for="rg-{{ loop.index }}">{{ r }}</label>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <!-- Loại hình -->
+        <div class="col-lg-6 mb-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white text-center">
+              <h5 class="mb-0"><i class="fa-solid fa-tags"></i> Loại hình</h5>
+            </div>
+            <div class="card-body" style="background-color: #D4CCBC;">
+              {% for t in types %}
+                <div class="form-check mb-2" data-type="{{ t }}" data-bs-toggle="tooltip" title="Chọn loại hình {{ t }}">
+                  <input class="form-check-input type-checkbox" type="checkbox" name="type" value="{{ t }}" id="tp-{{ loop.index }}">
+                  <label class="form-check-label" for="tp-{{ loop.index }}">{{ t }}</label>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row Top-5 Chart -->
+      <div class="row mb-5">
+        <div class="col-12">
+          <div class="card shadow-sm"
+               style="background-color: rgba(212, 204, 188, 0.5); border: none;">
+            <div class="card-header bg-primary text-white text-center">
+              <h5 class="mb-0">
+                <i class="fa-solid fa-chart-pie"></i>
+                Top 5 Điểm Du lịch được chọn nhiều nhất
+              </h5>
+            </div>
+            <div class="card-body d-flex justify-content-center">
+              <div style="width: 300px;">
+                <canvas id="historyPie"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="d-flex justify-content-between">
+        <a href="{{ url_for('select_all_destinations') }}" class="btn btn-outline-secondary">
+          <i class="fa-solid fa-list"></i> Chọn tất cả
+        </a>
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i class="fa-solid fa-arrow-right"></i> Tiếp tục
+        </button>
+      </div>
+    </form>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-100 text-white text-center py-3 mt-auto">
+    <small>&copy; 2025 HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH</small>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const pieLabels = {{ top5_labels | tojson }};
+    const pieData   = {{ top5_counts | tojson }};
+    const ctxPie = document.getElementById('historyPie').getContext('2d');
+    new Chart(ctxPie, {
+      type: 'pie',
+      data: { labels: pieLabels, datasets: [{ data: pieData }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom', align: 'center', labels: { boxWidth: 12, padding: 16, usePointStyle: true } }
+        }
+      }
+    });
+  </script>
+  <script>
+    const regionTypes = JSON.parse('{{ region_types | tojson | safe }}');
+    function updateTypes() {
+      const checked = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => cb.value);
+      const allowed = new Set();
+      if (checked.length === 0) {
+        Object.values(regionTypes).flat().forEach(t => allowed.add(t));
+      } else {
+        checked.forEach(r => (regionTypes[r] || []).forEach(t => allowed.add(t)));
+      }
+      document.querySelectorAll('.type-checkbox').forEach(cb => {
+        const wrapper = cb.closest('.form-check');
+        if (allowed.has(cb.value)) wrapper.style.display = '';
+        else { cb.checked = false; wrapper.style.display = 'none'; }
+      });
+    }
+    document.querySelectorAll('.region-checkbox').forEach(cb => cb.addEventListener('change', updateTypes));
+    updateTypes();
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Lịch sử – HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH</title>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+  />
+  <script defer src="https://kit.fontawesome.com/yourkit.js"></script>
+  <style>
+    body {
+      background-color: #DFD0B8;
+    }
+    nav.navbar,
+    footer {
+      background-color: #19485F !important;
+    }
+    nav .navbar-brand,
+    footer {
+      color: #fff !important;
+    }
+    h1 {
+      color: #19485F;
+      font-weight: bold;
+    }
+    /* Khung chính cho nội dung lịch sử */
+    .history-container {
+      background-color: #d4ccbc;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    /* Bảng lịch sử trong suốt */
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: transparent !important;
+    }
+    .history-table thead th,
+    .history-table tbody td {
+      background-color: transparent !important;
+      border: 1px solid rgba(0,0,0,0.1);
+      text-align: center;
+      vertical-align: middle;
+      padding: 0.75rem;
+    }
+    /* Hover hàng */
+    .history-table tbody tr:hover td {
+      background-color: rgba(0,0,0,0.05);
+    }
+    /* Input & button tìm kiếm */
+    #searchInput {
+      border-radius: 5px;
+    }
+    .btn-outline-primary {
+      color: #19485F;
+      border-color: #19485F;
+    }
+    .btn-outline-primary:hover {
+      background-color: #19485F;
+      color: #fff;
+      border-color: #19485F;
+    }
+    /* Nút quay về */
+    .btn-primary {
+      background-color: #19485F;
+      border-color: #19485F;
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background-color: #0f3548;
+      border-color: #0f3548;
+    }
+    .btn-custom {
+      font-size: 1.1rem;
+      padding: 10px 20px;
+    }
+    /* Phân trang */
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .page-link {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        <i class="fa-solid fa-map-location-dot"></i> HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH
+      </a>
+    </div>
+  </nav>
+
+  <div class="container my-5">
+    <h1 class="text-center mb-4">Lịch sử Tính Toán</h1>
+
+    <div class="history-container mb-4">
+      <!-- Tìm kiếm lịch sử -->
+      <div class="d-flex justify-content-between mb-4">
+        <input
+          type="text"
+          id="searchInput"
+          class="form-control w-75"
+          placeholder="Tìm kiếm theo thời gian hoặc điểm đến..."
+        />
+        <button id="searchBtn" class="btn btn-outline-primary ms-2">Tìm kiếm</button>
+      </div>
+
+      <!-- Bảng lịch sử -->
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Thời gian</th>
+            <th>Điểm đã chọn</th>
+            <th>Tiêu chí</th>
+            <th>Kết quả top 3</th>
+          </tr>
+        </thead>
+        <tbody id="historyTable">
+          {% for h in history_list %}
+          <tr>
+            <td>{{ h.id }}</td>
+            <td>{{ h.calc_time }}</td>
+            <td>{{ h.destinations | join(', ') }}</td>
+            <td>{{ h.criteria | join(', ') }}</td>
+            <td>
+              {% for r in h.results[:3] %}
+                {{ r.name }} ({{ '%.3f'|format(r.score) }}){% if not loop.last %}, {% endif %}
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <!-- Phân trang -->
+      <div class="pagination-container">
+        <ul class="pagination" id="pagination"></ul>
+      </div>
+    </div>
+
+    <!-- Nút Quay về -->
+    <div class="text-center">
+      <a href="{{ url_for('filter_destinations') }}" class="btn btn-primary btn-custom">
+        <i class="fa-solid fa-arrow-left"></i> Quay về trang chính
+      </a>
+    </div>
+  </div>
+
+  <footer class="bg-dark text-white text-center py-3">
+    <small>&copy; 2025 HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH</small>
+  </footer>
+
+  <script>
+    // Tìm kiếm
+    document.getElementById('searchBtn').addEventListener('click', () => {
+      const term = document.getElementById('searchInput').value.toLowerCase();
+      document.querySelectorAll('#historyTable tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(term) ? '' : 'none';
+      });
+    });
+
+    // Phân trang
+    const rowsPerPage = 5;
+    const rows = Array.from(document.querySelectorAll('#historyTable tr'));
+    const pageCount = Math.ceil(rows.length / rowsPerPage);
+    const pagination = document.getElementById('pagination');
+
+    function showPage(page) {
+      rows.forEach((r,i) => r.style.display = (i>= (page-1)*rowsPerPage && i<page*rowsPerPage) ? '' : 'none');
+      document.querySelectorAll('.page-item').forEach((li,idx) =>
+        li.classList.toggle('active', idx===page-1)
+      );
+    }
+
+    // Khởi tạo phân trang
+    for (let i=1; i<=pageCount; i++){
+      const li = document.createElement('li');
+      li.className = 'page-item'+(i===1?' active':'');
+      const a = document.createElement('a');
+      a.className = 'page-link';
+      a.textContent = i;
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        showPage(i);
+      });
+      li.appendChild(a);
+      pagination.appendChild(li);
+    }
+    showPage(1);
+  </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Báo cáo AHP</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      background-color: white; 
+      color: black; 
+      margin: 20px;
+    }
+    h1, h2 { 
+      color: #19485f; 
+      margin-bottom: 0.5em;
+    }
+    ul {
+      list-style-type: disc;
+      margin-left: 1.5em;
+    }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 1em;
+      font-size: 1rem;
+    }
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 8px; 
+      text-align: left; 
+    }
+    th { 
+      background-color: #19485f; 
+      color: white; 
+    }
+    strong {
+      color: #19485f;
+    }
+  </style>
+</head>
+<body>
+  <h1>BÁO CÁO ĐÁNH GIÁ ĐỊA ĐIỂM DU LỊCH</h1>
+
+  <h2>Tiêu chí và trọng số</h2>
+  <ul>
+    {% for crit in selected_criteria %}
+      <li><strong>{{ crit }}</strong>: {{ '%.3f' | format(crit_weights[loop.index0]) }}</li>
+    {% endfor %}
+  </ul>
+
+
+  <p><strong>Lambda max:</strong> {{ '%.3f' | format(lambda_max) }}</p>
+  <p><strong>Chỉ số CI:</strong> {{ '%.3f' | format(ci) }}</p>
+  <p><strong>Chỉ số CR:</strong> {{ '%.3f' | format(cr) }}</p>
+
+  <h2>Kết quả xếp hạng</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Địa điểm</th>
+        <th>Điểm</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr>
+        <td>{{ r.name }}</td>
+        <td>{{ ('%.2f' | format(r.score * 100)) }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

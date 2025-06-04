@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kết quả – HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  {% if not pdf_mode %}
+  <script defer src="https://kit.fontawesome.com/yourkit.js"></script>
+  {% endif %}
+  <style>
+    body {
+      background-color: #dfd0b8;
+    }
+    nav.navbar,
+    footer {
+      background-color: #19485f !important;
+    }
+    nav .navbar-brand,
+    nav .nav-link,
+    footer {
+      color: #fff !important;
+    }
+    h1 {
+      color: #19485f;
+      font-weight: bold;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #19485f;
+    }
+    .card {
+      background-color: #d4ccbc;
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .result-table-container {
+      background-color: #d4ccbc;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 1.2rem;
+    }
+    .result-table thead th,
+    .result-table tbody td {
+      border: 1px solid rgba(0,0,0,0.1);
+      text-align: center;
+      vertical-align: middle;
+      padding: 0.75rem;
+    }
+    .btn-primary,
+    .btn-primary:hover,
+    .btn-primary:focus {
+      background-color: #19485f;
+      border-color: #19485f;
+      color: #fff;
+    }
+    .btn-secondary,
+    .btn-secondary:hover,
+    .btn-secondary:focus {
+      background-color: #d4ccbc;
+      border-color: #d4ccbc;
+      color: #19485f;
+    }
+    .btn-secondary:hover,
+    .btn-secondary:focus {
+      background-color: #c1b8a5;
+      border-color: #c1b8a5;
+      color: #19485f;
+    }
+    .btn-custom {
+      padding: 10px 20px;
+      font-size: 1.1rem;
+    }
+    {% if pdf_mode %}
+    nav.navbar, footer, .btn-custom, #scoreChart, script {
+      display: none !important;
+    }
+    {% endif %}
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="{{ url_for('index') }}">
+        <i class="fa-solid fa-map-location-dot"></i> HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH
+      </a>
+      <a class="nav-link text-white" href="{{ url_for('history') }}">Lịch sử</a>
+    </div>
+  </nav>
+
+  <div class="container my-5">
+    <h1 class="text-center mb-4">Kết quả Đánh giá Điểm du lịch</h1>
+
+    <!-- Card: Trọng số và Độ nhất quán -->
+    <div class="card mb-4 shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Trọng số Tiêu chí</h5>
+        <ul class="mb-3">
+          {% for i in range(selected_criteria|length) %}
+          <li>
+            {{ selected_criteria[i] }}:
+            <span class="highlight">{{ '%.3f' | format(crit_weights[i]) }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+
+        <h6 class="card-subtitle mb-2 text-muted">Độ nhất quán:</h6>
+        <p class="mb-0">
+          <span class="highlight">λₘₐₓ = {{ '%.3f' | format(lambda_max) }}</span>,
+          <span class="highlight">CI = {{ '%.3f' | format(ci) }}</span>,
+          <span class="highlight">CR = {{ '%.3f' | format(cr) }}</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Bảng điểm kết quả -->
+    <div class="result-table-container mb-4">
+      <h5 class="mb-3" style="color:#19485f;">Điểm số các Điểm Du lịch:</h5>
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th>Hạng</th>
+            <th>Điểm du lịch</th>
+            <th>Điểm số</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in results %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ '%.3f' | format(r.score) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Biểu đồ điểm -->
+    {% if not pdf_mode %}
+    <div class="card p-4 mb-4">
+      <h5 class="mb-3" style="color:#19485f;">Biểu đồ Điểm số các Điểm Du lịch</h5>
+      <canvas id="scoreChart" height="100"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      const labels = {{ results | map(attribute='name') | list | tojson }};
+      const scores = {{ results | map(attribute='score') | list | tojson }};
+      const ctx = document.getElementById('scoreChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Điểm số',
+            data: scores,
+            backgroundColor: '#19485f',
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 0.1
+              }
+            }
+          }
+        }
+      });
+    </script>
+    {% endif %}
+
+    <!-- Nút điều hướng -->
+    <div class="d-flex justify-content-between mt-4">
+      <a href="{{ url_for('matrix_display') }}" class="btn btn-secondary btn-custom">
+        <i class="fa-solid fa-table"></i> Xem Ma trận
+      </a>
+      <a href="{{ url_for('filter_destinations') }}" class="btn btn-primary btn-custom">
+        <i class="fa-solid fa-rotate-left"></i> Tính lại
+      </a>
+      {% if not pdf_mode %}
+      <a href="{{ url_for('export_pdf') }}" class="btn btn-primary btn-custom">
+        <i class="fa-solid fa-file-pdf"></i> Xuất PDF
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <footer class="text-white text-center py-3 mt-auto">
+    <small>&copy; 2025 HỆ HỖ TRỢ RA QUYẾT ĐỊNH CHỌN ĐỊA ĐIỂM DU LỊCH</small>
+  </footer>
+</body>
+</html>

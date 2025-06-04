@@ -1,0 +1,496 @@
+-- =======================
+-- 1. TẠO CẤU TRÚC BẢNG
+-- =======================
+
+-- Bảng destinations
+CREATE TABLE destinations (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  region TEXT NOT NULL,
+  type TEXT NOT NULL,
+  description TEXT,
+  latitude NUMERIC,
+  longitude NUMERIC
+);
+
+-- Bảng cost
+CREATE TABLE cost (
+  id SERIAL PRIMARY KEY,
+  dest_name TEXT NOT NULL REFERENCES destinations(name),
+  entry_fee NUMERIC NOT NULL,
+  avg_spend_per_day NUMERIC NOT NULL,
+  transport_cost NUMERIC NOT NULL,
+  total_cost NUMERIC GENERATED ALWAYS AS (
+    entry_fee + avg_spend_per_day + transport_cost
+  ) STORED
+);
+
+-- Bảng accessibility
+CREATE TABLE accessibility (
+  id SERIAL PRIMARY KEY,
+  dest_name TEXT NOT NULL REFERENCES destinations(name),
+  transport_score NUMERIC NOT NULL,
+  infrastructure_score NUMERIC NOT NULL,
+  total NUMERIC GENERATED ALWAYS AS (
+    (transport_score/10.0 + infrastructure_score/10.0) / 2.0
+  ) STORED
+);
+
+-- Bảng attractions
+CREATE TABLE attractions (
+  id SERIAL PRIMARY KEY,
+  dest_name TEXT NOT NULL REFERENCES destinations(name),
+  num_attractions INTEGER NOT NULL,
+  diversity_score NUMERIC NOT NULL,
+  total NUMERIC GENERATED ALWAYS AS (
+    (num_attractions/20.0 + diversity_score/10.0) / 2.0
+  ) STORED
+);
+
+-- Bảng safety
+CREATE TABLE safety (
+  id SERIAL PRIMARY KEY,
+  dest_name TEXT NOT NULL REFERENCES destinations(name),
+  crime_rate NUMERIC NOT NULL,
+  health_score NUMERIC NOT NULL,
+  total NUMERIC GENERATED ALWAYS AS (
+    (crime_rate/10.0 + health_score/10.0) / 2.0
+  ) STORED
+);
+
+-- Bảng amenities
+CREATE TABLE amenities (
+  id SERIAL PRIMARY KEY,
+  dest_name TEXT NOT NULL REFERENCES destinations(name),
+  hotel_score NUMERIC NOT NULL,
+  food_score NUMERIC NOT NULL,
+  total NUMERIC GENERATED ALWAYS AS (
+    (hotel_score/10.0 + food_score/10.0) / 2.0
+  ) STORED
+);
+
+-- Bảng tieu_chi & criteria_config
+CREATE TABLE tieu_chi (
+  id SERIAL PRIMARY KEY,
+  ten VARCHAR(50) NOT NULL,
+  mo_ta TEXT
+);
+
+CREATE TABLE criteria_config (
+  id SERIAL PRIMARY KEY,
+  key VARCHAR(50) NOT NULL,
+  display VARCHAR(100) NOT NULL,
+  table_name VARCHAR(50) NOT NULL,
+  field_name VARCHAR(50) NOT NULL,
+  is_cost BOOLEAN NOT NULL
+);
+
+-- Bảng lịch sử
+CREATE TABLE calculation_history (
+  id SERIAL PRIMARY KEY,
+  calc_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  destinations TEXT NOT NULL,
+  criteria TEXT NOT NULL,
+  crit_weights TEXT,
+  results TEXT,
+  matrices TEXT
+);
+
+-- =======================
+-- 2. CHÈN TIÊU CHÍ
+-- =======================
+INSERT INTO tieu_chi (ten, mo_ta) VALUES
+  ('cost', 'Chi phí du lịch'),
+  ('accessibility', 'Tiện lợi di chuyển'),
+  ('attractions', 'Số lượng & đa dạng điểm tham quan'),
+  ('safety', 'Mức độ an toàn'),
+  ('amenities', 'Tiện ích: khách sạn & ẩm thực')
+;
+
+INSERT INTO criteria_config (key, display, table_name, field_name, is_cost) VALUES
+  ('cost', 'Chi phí', 'cost', 'total_cost', true),
+  ('accessibility', 'Tiện lợi', 'accessibility', 'total', false),
+  ('attractions', 'Điểm tham quan', 'attractions', 'total', false),
+  ('safety', 'An toàn', 'safety', 'total', false),
+  ('amenities', 'Tiện ích', 'amenities', 'total', false)
+;
+
+-- =======================
+-- 3. CHÈN DESTINATIONS (63 điểm)
+-- =======================
+INSERT INTO destinations (name, region, type, description, latitude, longitude) VALUES
+  -- 3 điểm ban đầu
+  ('Hòn đảo Cát Bà',      'Đồng bằng sông Hồng',    'Biển',     'Đảo thuộc Vịnh Hạ Long', 20.7410, 107.0700),
+  ('Sa Pa',               'Tây Bắc',                'Thị trấn', 'Vùng cao với ruộng bậc thang', 22.3370, 103.8440),
+  ('Đà Lạt',              'Tây Nguyên',             'Phong cảnh','Thành phố ngàn hoa', 11.9404, 108.4583),
+  -- 5 điểm phụ
+  ('Vịnh Hạ Long',        'Đồng bằng sông Hồng',    'Biển',     'Di sản thiên nhiên thế giới', 20.9101, 107.1839),
+  ('Nha Trang',           'Duyên hải Nam Trung Bộ', 'Biển',     'Bãi cát trắng, lặn san hô', 12.2388, 109.1967),
+  ('Phú Quốc',            'Đồng bằng sông Cửu Long','Đảo',      'Hòn đảo ngọc', 10.2200, 103.9754),
+  ('Huế',                 'Duyên hải Bắc Trung Bộ', 'Di sản',   'Cố đô với lăng tẩm', 16.4637, 107.5909),
+  ('Mũi Né',              'Duyên hải Nam Trung Bộ', 'Biển',     'Đồi cát và làng chài', 10.9328, 108.2917),
+  -- 50 điểm mở rộng
+  ('Thác Bản Giốc',       'Đông Bắc Bộ',            'Thác nước',    'Thác nước biên giới Việt–Trung', 22.6670, 106.8540),
+  ('Hang Sơn Đoòng',      'Bắc Trung Bộ',           'Hang động',    'Hang lớn nhất thế giới', 17.5320, 106.3230),
+  ('Cao Nguyên Mộc Châu',  'Tây Bắc',                'Đồng cỏ',      'Đồng cỏ và rừng thông', 21.3350, 104.0350),
+  ('Động Phong Nha',      'Bắc Trung Bộ',           'Hang động',    'Hệ thống hang động phong phú', 17.5640, 106.1870),
+  ('Biển Côn Đảo',        'Nam Bộ',                 'Đảo',          'Đảo hoang sơ, rùa biển', 8.7000, 106.6500),
+  ('Chợ Bắc Hà',          'Tây Bắc',                'Chợ phiên',    'Phiên chợ đa văn hóa', 22.5580, 104.0350),
+  ('Đồi chè Mộc Châu',    'Tây Bắc',                'Đồi chè',      'Đồi chè bậc thang', 21.3333, 104.0500),
+  ('Đà Nẵng',             'Duyên hải Nam Trung Bộ','Thành phố',   'Cầu Rồng & bãi biển Mỹ Khê', 16.0544, 108.2022),
+  ('Lăng Cô',             'Duyên hải Bắc Trung Bộ','Biển',        'Vịnh cát vàng', 16.3290, 107.8410),
+  ('Bà Nà Hills',         'Duyên hải Bắc Trung Bộ','Khu nghỉ dưỡng','Du lịch sinh thái trên núi', 15.9940, 107.9870),
+  ('Hội An',              'Duyên hải Nam Trung Bộ','Phố cổ',      'Phố đèn lồng cổ kính', 15.8801, 108.3380),
+  ('Tháp Chàm Mỹ Sơn',     'Duyên hải Nam Trung Bộ','Di sản',      'Quần thể tháp Chămpa', 15.7754, 108.1231),
+  ('Đèo Hải Vân',         'Duyên hải Bắc Trung Bộ','Đèo',         'Con đường ven biển', 16.4075, 107.8608),
+  ('Tam Đảo',             'Đông Bắc Bộ',            'Đồi núi',     'Thị trấn mờ sương', 21.4575, 105.6701),
+  ('Hồ Ba Bể',            'Đông Bắc Bộ',            'Hồ nước',     'Hồ ngọt giữa rừng', 22.3578, 105.5638),
+  ('Vườn quốc gia Cúc Phương','Đông Bắc Bộ',        'Rừng',        'Rừng nguyên sinh', 20.2987, 105.5557),
+  ('Đảo Lý Sơn',          'Duyên hải Nam Trung Bộ','Đảo',          'Đảo núi lửa', 15.4989, 108.6551),
+  ('Ninh Bình',           'Đồng bằng sông Hồng',    'Di sản',      'Tam Cốc – Bích Động', 20.2500, 105.9750),
+  ('Tràng An',            'Đồng bằng sông Hồng',    'Di sản',      'Du thuyền trên sông', 20.2600, 105.9129),
+  ('Cố đô Hoa Lư',        'Đồng bằng sông Hồng',    'Di sản',      'Cố đô đầu tiên', 20.2530, 105.9188),
+  ('Đảo Cù Lao Chàm',     'Duyên hải Nam Trung Bộ','Đảo',          'Sinh thái biển phong phú', 15.8937, 108.5569),
+  ('Biển Hồ Tốc',         'Tây Nguyên',             'Hồ nước',     'Hồ quanh năm mát lạnh', 11.2500, 108.5700),
+  ('Đồi cát Phan Thiết',  'Duyên hải Nam Trung Bộ','Đồi cát',     'Cồn cát mê hoặc', 10.9328, 108.2970),
+  ('Hồ Tuyền Lâm',        'Tây Nguyên',             'Hồ nước',     'Hồ yên bình', 11.9250, 108.4394),
+  ('Sơn Trà',             'Duyên hải Nam Trung Bộ','Bán đảo',      'Bán đảo xanh', 16.0825, 108.2650),
+  ('Bà Đen',              'Đồng bằng sông Cửu Long','Núi',         'Ngọn núi linh thiêng', 11.3560, 106.1000),
+  ('Đại Nam',             'Đồng bằng sông Cửu Long','Công viên giải trí','Khu tâm linh & vui chơi', 11.1070, 106.8751),
+  ('Bến Tre',             'Đồng bằng sông Cửu Long','Miệt vườn',    'Du lịch sông nước', 10.2361, 106.3600),
+  ('Chùa Hương',          'Đồng bằng sông Hồng',    'Tâm linh',     'Chùa trong hang động', 20.5344, 105.9795),
+  ('Đảo Quan Lạn',        'Đông Bắc Bộ',            'Đảo',          'Bãi biển hoang sơ', 21.2672, 107.4360),
+  ('Đảo Ngọc Vừng',       'Đông Bắc Bộ',            'Đảo',          'Sinh thái đa dạng', 21.1078, 107.1440),
+  ('Vườn quốc gia Ba Vì','Đồng bằng sông Hồng',    'Rừng núi',     'Gần Hà Nội', 21.0000, 105.3333),
+  ('Đồi chè Tà Xùa',      'Tây Bắc',                'Đồi chè',      'Đồi chè trên núi cao', 21.7293, 104.8600),
+  ('Suối Vàng',           'Tây Nguyên',             'Khu nghỉ dưỡng','Suối nước nóng', 11.8936, 108.4387),
+  ('Hồ Đa Mi',            'Tây Nguyên',             'Hồ nước',     'Hồ xanh giữa đồi', 11.6748, 108.9720),
+  ('Cầu Rồng',            'Duyên hải Nam Trung Bộ','Cầu',          'Cầu biểu tượng phun lửa nước', 16.0546, 108.2234),
+  ('Đèo Pha Đin',         'Tây Bắc',                'Đèo',         'Đèo hiểm trở', 21.2930, 104.3510),
+  ('Phú Quý',             'Duyên hải Nam Trung Bộ','Đảo',          'Đảo ngoài khơi Bình Thuận', 10.9100, 108.7200),
+  ('Vịnh Vũng Rô',        'Đông Nam Bộ',            'Vịnh',         'Cát trắng & nước trong', 12.5170, 109.4170),
+  ('Thác Pongour',        'Tây Nguyên',             'Thác nước',    'Thác lớn cao nguyên', 11.5550, 108.0020),
+  ('Đồi Con Heo',         'Đồng bằng sông Cửu Long','Đồi núi',     'Đồi nhấp nhô', 10.3150, 106.4660),
+  ('Hồ Tây',              'Đồng bằng sông Hồng',    'Hồ nước',     'Hồ lớn nhất Hà Nội', 21.0460, 105.8240),
+  ('Cầu Vàng',            'Duyên hải Bắc Trung Bộ','Cầu',          'Cầu trên mây', 15.9910, 107.9872),
+  ('Tháp Bà Ponagar',     'Duyên hải Nam Trung Bộ','Di sản',      'Tháp Chăm cổ', 12.2538, 109.1959),
+  ('Vườn quốc gia Cát Tiên','Đông Nam Bộ',          'Rừng',        'Đa dạng động thực vật', 11.4300, 107.2700),
+  ('Hải đăng Kê Gà',      'Duyên hải Nam Trung Bộ','Hải đăng',    'Hải đăng cổ kính', 10.4300, 108.0000),
+  ('Khoang Xanh Suối Tiên','Đông Bắc Bộ',           'Khu du lịch', 'Suối tiên Ba Vì', 21.0400, 105.3230),
+  ('Thác Dambri',         'Tây Nguyên',             'Thác nước',    'Thác giữa rừng thông', 11.5230, 107.8960),
+  ('Đồi chè Cầu Đất',     'Tây Nguyên',             'Đồi chè',      'Đồi chè gần Đà Lạt', 11.9450, 108.4840)
+;
+
+-- =======================
+-- 4. CHÈN DỮ LIỆU BẢNG CON
+-- =======================
+
+-- cost
+INSERT INTO cost (dest_name, entry_fee, avg_spend_per_day, transport_cost) VALUES
+  ('Hòn đảo Cát Bà',    100000, 500000, 200000),
+  ('Sa Pa',             80000,  600000, 300000),
+  ('Đà Lạt',            0,      700000, 250000),
+  ('Vịnh Hạ Long',      200000, 600000, 150000),
+  ('Nha Trang',         150000, 500000, 200000),
+  ('Phú Quốc',          100000, 700000, 250000),
+  ('Huế',               120000, 400000, 100000),
+  ('Mũi Né',            0,      550000, 150000),
+  /* 50 điểm mở rộng ... */
+  ('Thác Bản Giốc',     80000, 400000, 300000),
+  ('Hang Sơn Đoòng',    300000,1000000,500000),
+  ('Cao Nguyên Mộc Châu',50000,300000,200000),
+  ('Động Phong Nha',    100000,500000,250000),
+  ('Biển Côn Đảo',      150000,700000,400000),
+  ('Chợ Bắc Hà',        0,     200000,300000),
+  ('Đồi chè Mộc Châu',  0,     150000,200000),
+  ('Đà Nẵng',           0,     600000,300000),
+  ('Lăng Cô',           0,     400000,150000),
+  ('Bà Nà Hills',       150000,800000,300000),
+  ('Hội An',            0,     500000,250000),
+  ('Tháp Chàm Mỹ Sơn',   80000,400000,200000),
+  ('Đèo Hải Vân',       0,     200000,100000),
+  ('Tam Đảo',           0,     300000,200000),
+  ('Hồ Ba Bể',          20000,300000,350000),
+  ('Vườn quốc gia Cúc Phương',50000,250000,300000),
+  ('Đảo Lý Sơn',        100000,600000,350000),
+  ('Ninh Bình',         0,     400000,200000),
+  ('Tràng An',          200000,600000,250000),
+  ('Cố đô Hoa Lư',      50000, 200000,150000),
+  ('Đảo Cù Lao Chàm',   100000,500000,300000),
+  ('Biển Hồ Tốc',       0,     300000,200000),
+  ('Đồi cát Phan Thiết',0,     350000,200000),
+  ('Hồ Tuyền Lâm',      0,     400000,250000),
+  ('Sơn Trà',           0,     300000,200000),
+  ('Bà Đen',            0,     150000,100000),
+  ('Đại Nam',           0,     200000,150000),
+  ('Bến Tre',           0,     300000,200000),
+  ('Chùa Hương',        50000,100000,150000),
+  ('Đảo Quan Lạn',      0,     400000,300000),
+  ('Đảo Ngọc Vừng',     0,     350000,250000),
+  ('Vườn quốc gia Ba Vì',20000,200000,150000),
+  ('Đồi chè Tà Xùa',    0,     150000,200000),
+  ('Suối Vàng',         0,     400000,250000),
+  ('Hồ Đa Mi',          0,     250000,200000),
+  ('Cầu Rồng',          0,     0,     100000),
+  ('Đèo Pha Đin',       0,     100000,200000),
+  ('Phú Quý',           0,     400000,350000),
+  ('Vịnh Vũng Rô',      0,     350000,250000),
+  ('Thác Pongour',      0,     300000,200000),
+  ('Đồi Con Heo',       0,     200000,150000),
+  ('Hồ Tây',            0,     0,      50000),
+  ('Cầu Vàng',          0,     150000,250000),
+  ('Tháp Bà Ponagar',   50000,300000,200000),
+  ('Vườn quốc gia Cát Tiên',50000,350000,300000),
+  ('Hải đăng Kê Gà',    0,     100000,200000),
+  ('Khoang Xanh Suối Tiên',0,   250000,200000),
+  ('Thác Dambri',       0,     300000,250000),
+  ('Đồi chè Cầu Đất',   0,     150000,200000)
+;
+
+-- accessibility
+INSERT INTO accessibility (dest_name, transport_score, infrastructure_score) VALUES
+  ('Hòn đảo Cát Bà',    7,8),
+  ('Sa Pa',             5,6),
+  ('Đà Lạt',            9,7),
+  ('Vịnh Hạ Long',      8,7),
+  ('Nha Trang',         9,8),
+  ('Phú Quốc',          7,6),
+  ('Huế',               8,7),
+  ('Mũi Né',            7,6),
+  /* 50 điểm mở rộng ... */
+  ('Thác Bản Giốc',     6,7),
+  ('Hang Sơn Đoòng',    5,6),
+  ('Cao Nguyên Mộc Châu',7,8),
+  ('Động Phong Nha',    8,7),
+  ('Biển Côn Đảo',      5,5),
+  ('Chợ Bắc Hà',        4,3),
+  ('Đồi chè Mộc Châu',  7,7),
+  ('Đà Nẵng',           9,9),
+  ('Lăng Cô',           8,8),
+  ('Bà Nà Hills',       7,8),
+  ('Hội An',            9,7),
+  ('Tháp Chàm Mỹ Sơn',   6,6),
+  ('Đèo Hải Vân',       9,8),
+  ('Tam Đảo',           5,6),
+  ('Hồ Ba Bể',          5,5),
+  ('Vườn quốc gia Cúc Phương',4,4),
+  ('Đảo Lý Sơn',        6,6),
+  ('Ninh Bình',         8,7),
+  ('Tràng An',          8,8),
+  ('Cố đô Hoa Lư',      7,6),
+  ('Đảo Cù Lao Chàm',   7,7),
+  ('Biển Hồ Tốc',       4,4),
+  ('Đồi cát Phan Thiết',6,6),
+  ('Hồ Tuyền Lâm',      7,7),
+  ('Sơn Trà',           8,8),
+  ('Bà Đen',            5,4),
+  ('Đại Nam',           6,5),
+  ('Bến Tre',           4,5),
+  ('Chùa Hương',        3,3),
+  ('Đảo Quan Lạn',      4,4),
+  ('Đảo Ngọc Vừng',     4,4),
+  ('Vườn quốc gia Ba Vì',5,5),
+  ('Đồi chè Tà Xùa',    6,7),
+  ('Suối Vàng',         5,5),
+  ('Hồ Đa Mi',          5,5),
+  ('Cầu Rồng',          9,9),
+  ('Đèo Pha Đin',       4,4),
+  ('Phú Quý',           4,5),
+  ('Vịnh Vũng Rô',      5,5),
+  ('Thác Pongour',      6,6),
+  ('Đồi Con Heo',       3,3),
+  ('Hồ Tây',            9,9),
+  ('Cầu Vàng',          8,8),
+  ('Tháp Bà Ponagar',   8,7),
+  ('Vườn quốc gia Cát Tiên',5,5),
+  ('Hải đăng Kê Gà',    4,4),
+  ('Khoang Xanh Suối Tiên',6,6),
+  ('Thác Dambri',       5,5),
+  ('Đồi chè Cầu Đất',   6,7)
+;
+
+-- attractions
+INSERT INTO attractions (dest_name, num_attractions, diversity_score) VALUES
+  ('Hòn đảo Cát Bà',    10,6),
+  ('Sa Pa',             8,7),
+  ('Đà Lạt',            12,8),
+  ('Vịnh Hạ Long',      15,8),
+  ('Nha Trang',         12,7),
+  ('Phú Quốc',          10,7),
+  ('Huế',               14,9),
+  ('Mũi Né',            8,6),
+  /* 50 điểm mở rộng ... */
+  ('Thác Bản Giốc',     5,5),
+  ('Hang Sơn Đoòng',    3,4),
+  ('Cao Nguyên Mộc Châu',6,6),
+  ('Động Phong Nha',    8,7),
+  ('Biển Côn Đảo',      7,6),
+  ('Chợ Bắc Hà',        4,5),
+  ('Đồi chè Mộc Châu',  3,4),
+  ('Đà Nẵng',           12,8),
+  ('Lăng Cô',           4,5),
+  ('Bà Nà Hills',       10,7),
+  ('Hội An',            15,9),
+  ('Tháp Chàm Mỹ Sơn',   4,5),
+  ('Đèo Hải Vân',       2,3),
+  ('Tam Đảo',           3,4),
+  ('Hồ Ba Bể',          6,6),
+  ('Vườn quốc gia Cúc Phương',5,5),
+  ('Đảo Lý Sơn',        5,5),
+  ('Ninh Bình',         10,8),
+  ('Tràng An',          12,9),
+  ('Cố đô Hoa Lư',      4,5),
+  ('Đảo Cù Lao Chàm',   5,5),
+  ('Biển Hồ Tốc',       2,2),
+  ('Đồi cát Phan Thiết',3,3),
+  ('Hồ Tuyền Lâm',      3,4),
+  ('Sơn Trà',           6,6),
+  ('Bà Đen',            3,3),
+  ('Đại Nam',           8,5),
+  ('Bến Tre',           4,5),
+  ('Chùa Hương',        3,4),
+  ('Đảo Quan Lạn',      3,3),
+  ('Đảo Ngọc Vừng',     3,3),
+  ('Vườn quốc gia Ba Vì',4,5),
+  ('Đồi chè Tà Xùa',    3,4),
+  ('Suối Vàng',         5,5),
+  ('Hồ Đa Mi',          2,2),
+  ('Cầu Rồng',          1,1),
+  ('Đèo Pha Đin',       2,3),
+  ('Phú Quý',           2,2),
+  ('Vịnh Vũng Rô',      3,3),
+  ('Thác Pongour',      4,4),
+  ('Đồi Con Heo',       1,1),
+  ('Hồ Tây',            0,0),
+  ('Cầu Vàng',          1,1),
+  ('Tháp Bà Ponagar',   3,3),
+  ('Vườn quốc gia Cát Tiên',6,6),
+  ('Hải đăng Kê Gà',    1,1),
+  ('Khoang Xanh Suối Tiên',4,4),
+  ('Thác Dambri',       3,3),
+  ('Đồi chè Cầu Đất',   3,4)
+;
+
+-- safety
+INSERT INTO safety (dest_name, crime_rate, health_score) VALUES
+  ('Hòn đảo Cát Bà',    8,7),
+  ('Sa Pa',             6,8),
+  ('Đà Lạt',            7,9),
+  ('Vịnh Hạ Long',      6,7),
+  ('Nha Trang',         7,8),
+  ('Phú Quốc',          8,8),
+  ('Huế',               7,7),
+  ('Mũi Né',            6,6),
+  /* 50 điểm mở rộng ... */
+  ('Thác Bản Giốc',     6,7),
+  ('Hang Sơn Đoòng',    4,5),
+  ('Cao Nguyên Mộc Châu',7,8),
+  ('Động Phong Nha',    6,7),
+  ('Biển Côn Đảo',      5,6),
+  ('Chợ Bắc Hà',        3,4),
+  ('Đồi chè Mộc Châu',  6,7),
+  ('Đà Nẵng',           8,9),
+  ('Lăng Cô',           7,8),
+  ('Bà Nà Hills',       8,8),
+  ('Hội An',            9,9),
+  ('Tháp Chàm Mỹ Sơn',   5,6),
+  ('Đèo Hải Vân',       8,8),
+  ('Tam Đảo',           5,5),
+  ('Hồ Ba Bể',          6,6),
+  ('Vườn quốc gia Cúc Phương',6,6),
+  ('Đảo Lý Sơn',        7,7),
+  ('Ninh Bình',         7,7),
+  ('Tràng An',          8,8),
+  ('Cố đô Hoa Lư',      6,6),
+  ('Đảo Cù Lao Chàm',   7,7),
+  ('Biển Hồ Tốc',       5,5),
+  ('Đồi cát Phan Thiết',6,6),
+  ('Hồ Tuyền Lâm',      7,7),
+  ('Sơn Trà',           8,8),
+  ('Bà Đen',            4,5),
+  ('Đại Nam',           5,6),
+  ('Bến Tre',           5,5),
+  ('Chùa Hương',        4,5),
+  ('Đảo Quan Lạn',      5,5),
+  ('Đảo Ngọc Vừng',     5,5),
+  ('Vườn quốc gia Ba Vì',6,6),
+  ('Đồi chè Tà Xùa',    6,7),
+  ('Suối Vàng',         5,5),
+  ('Hồ Đa Mi',          5,5),
+  ('Cầu Rồng',          9,9),
+  ('Đèo Pha Đin',       4,5),
+  ('Phú Quý',           5,5),
+  ('Vịnh Vũng Rô',      5,5),
+  ('Thác Pongour',      6,6),
+  ('Đồi Con Heo',       4,4),
+  ('Hồ Tây',            9,9),
+  ('Cầu Vàng',          8,8),
+  ('Tháp Bà Ponagar',   6,6),
+  ('Vườn quốc gia Cát Tiên',5,5),
+  ('Hải đăng Kê Gà',    5,5),
+  ('Khoang Xanh Suối Tiên',6,6),
+  ('Thác Dambri',       5,5),
+  ('Đồi chè Cầu Đất',   6,6)
+;
+
+-- amenities
+INSERT INTO amenities (dest_name, hotel_score, food_score) VALUES
+  ('Hòn đảo Cát Bà',    8,9),
+  ('Sa Pa',             7,8),
+  ('Đà Lạt',            9,9),
+  ('Vịnh Hạ Long',      8,8),
+  ('Nha Trang',         9,9),
+  ('Phú Quốc',          9,8),
+  ('Huế',               8,7),
+  ('Mũi Né',            7,8),
+  /* 50 điểm mở rộng ... */
+  ('Thác Bản Giốc',     6,7),
+  ('Hang Sơn Đoòng',    5,5),
+  ('Cao Nguyên Mộc Châu',7,7),
+  ('Động Phong Nha',    6,6),
+  ('Biển Côn Đảo',      7,6),
+  ('Chợ Bắc Hà',        4,5),
+  ('Đồi chè Mộc Châu',  6,6),
+  ('Đà Nẵng',           9,9),
+  ('Lăng Cô',           7,7),
+  ('Bà Nà Hills',       8,8),
+  ('Hội An',            8,9),
+  ('Tháp Chàm Mỹ Sơn',   5,6),
+  ('Đèo Hải Vân',       7,7),
+  ('Tam Đảo',           5,5),
+  ('Hồ Ba Bể',          6,6),
+  ('Vườn quốc gia Cúc Phương',6,6),
+  ('Đảo Lý Sơn',        7,7),
+  ('Ninh Bình',         7,7),
+  ('Tràng An',          8,8),
+  ('Cố đô Hoa Lư',      6,6),
+  ('Đảo Cù Lao Chàm',   7,7),
+  ('Biển Hồ Tốc',       5,5),
+  ('Đồi cát Phan Thiết',6,6),
+  ('Hồ Tuyền Lâm',      7,7),
+  ('Sơn Trà',           8,8),
+  ('Bà Đen',            5,5),
+  ('Đại Nam',           6,6),
+  ('Bến Tre',           5,5),
+  ('Chùa Hương',        5,5),
+  ('Đảo Quan Lạn',      5,5),
+  ('Đảo Ngọc Vừng',     5,5),
+  ('Vườn quốc gia Ba Vì',6,6),
+  ('Đồi chè Tà Xùa',    6,6),
+  ('Suối Vàng',         6,6),
+  ('Hồ Đa Mi',          5,5),
+  ('Cầu Rồng',          9,9),
+  ('Đèo Pha Đin',       5,5),
+  ('Phú Quý',           6,6),
+  ('Vịnh Vũng Rô',      6,6),
+  ('Thác Pongour',      7,7),
+  ('Đồi Con Heo',       5,5),
+  ('Hồ Tây',            9,9),
+  ('Cầu Vàng',          8,8),
+  ('Tháp Bà Ponagar',   6,6),
+  ('Vườn quốc gia Cát Tiên',6,6),
+  ('Hải đăng Kê Gà',    5,5),
+  ('Khoang Xanh Suối Tiên',6,6),
+  ('Thác Dambri',       6,6),
+  ('Đồi chè Cầu Đất',   7,7)
+;
