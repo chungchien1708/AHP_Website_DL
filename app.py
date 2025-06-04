@@ -36,22 +36,29 @@ OPENROUTER_API_KEY = "sk-or-v1-f4144ed6727a0bccf07d1b67b3e3723c9a18bf8904d0e0ad9
 #     )
 #     return conn
 def get_db_connection():
-    # Lấy DATABASE_URL từ biến môi trường (được thêm trong Render)
-    database_url = os.environ.get('DATABASE_URL')
-    
-    if not database_url:
-        raise ValueError("DATABASE_URL is not set in environment variables.")
+    db_url = os.environ.get('DATABASE_URL')
 
-    # Phân tích chuỗi URL: postgres://user:pass@host:port/dbname
-    result = urlparse(database_url)
+    if db_url:
+        # Xử lý chuỗi URL do Render cung cấp
+        up.uses_netloc.append("postgres")
+        url = up.urlparse(db_url)
+        conn = psycopg2.connect(
+            database=url.path[1:],
+            user=url.username,
+            password=url.password,
+            host=url.hostname,
+            port=url.port
+        )
+    else:
+        # Cấu hình chạy local
+        conn = psycopg2.connect(
+            database='ahp_tourism_db',
+            user='postgres',
+            password='oikuhj12345',
+            host='localhost',
+            port='5432'
+        )
 
-    conn = psycopg2.connect(
-        database=result.path[1:],       # Bỏ dấu "/" ở đầu
-        user=result.username,
-        password=result.password,
-        host=result.hostname,
-        port=result.port
-    )
     return conn
 
 # -------------------------------
