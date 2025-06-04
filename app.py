@@ -17,6 +17,7 @@ import pdfkit
 import requests
 import os
 import psycopg2
+import urllib.parse as up
 from urllib.parse import urlparse
 
 app = Flask(__name__)
